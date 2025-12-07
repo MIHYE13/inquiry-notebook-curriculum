@@ -11,12 +11,17 @@
   },
   "dependencies": {
     "firebase": "^10.14.1",
+    "html-to-image": "^1.11.13",
+    "lodash": "^4.17.21",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "recharts": "^3.5.1"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.21",
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
+    "@types/recharts": "^1.8.29",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",

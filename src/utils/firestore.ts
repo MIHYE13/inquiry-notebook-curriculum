@@ -5,16 +5,20 @@ import {
   setDoc,
   getDocs,
   query,
-  where,
-  Timestamp,
   orderBy
 } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { StudentNotebook, InquiryEntry } from '../types';
 
-// 학생 ID 생성 (이름 + 코드를 해시하여 사용)
+// 학생 ID 생성 (이름 + 코드). 한글 등 유니코드도 안전하게 처리
 export function generateStudentId(name: string, code: string): string {
-  return btoa(`${name}:${code}`).replace(/[^a-zA-Z0-9]/g, '');
+  const raw = `${name}:${code}`;
+  const base64 = btoa(
+    encodeURIComponent(raw).replace(/%([0-9A-F]{2})/g, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16))
+    )
+  );
+  return base64.replace(/[^a-zA-Z0-9]/g, '');
 }
 
 // 학생 정보 가져오기 또는 생성

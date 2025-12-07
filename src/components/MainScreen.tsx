@@ -74,6 +74,8 @@ const MainScreen: React.FC<MainScreenProps> = ({ studentId, studentName, onLogou
       methods: '',
       findings: '',
       reflectionText: '',
+      dataTable: undefined,
+      barChart: undefined,
       resources: {
         files: [],
         links: []

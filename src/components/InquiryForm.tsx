@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { InquiryEntry } from '../types';
+import { InquiryEntry, Curriculum, CurriculumLesson, DataTable, BarChartData } from '../types';
 import DrawingCanvas from './DrawingCanvas';
 import AIHelpButton from './AIHelpButton';
+import CurriculumSelector from './CurriculumSelector';
+import DataCreatorModal from './DataCreatorModal';
+import DataTableCreator from './DataTableCreator';
+import BarChartCreator from './BarChartCreator';
 import { suggestQuestionsOrHints } from '../api/chatgpt';
 import { searchRecentScienceInfo } from '../api/perplexity';
 import { addAIHelpLog } from '../utils/firestore';
@@ -22,6 +26,9 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
   const [formData, setFormData] = useState<InquiryEntry>(entry);
   const [newLink, setNewLink] = useState('');
   const [linkDescription, setLinkDescription] = useState('');
+  const [showCurriculumSelector, setShowCurriculumSelector] = useState(false);
+  const [showTableModal, setShowTableModal] = useState(false);
+  const [showChartModal, setShowChartModal] = useState(false);
 
   useEffect(() => {
     setFormData(entry);
@@ -112,6 +119,64 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setFormData(prev => ({
       ...prev,
       reflectionDrawingDataUrl: dataUrl
+    }));
+  };
+
+  const handleSelectCurriculumLesson = (curriculum: Curriculum, lesson: CurriculumLesson) => {
+    setFormData(prev => ({
+      ...prev,
+      todayTopic: lesson.topic,
+      selectedLessonInfo: {
+        curriculumName: `${curriculum.grade} ${curriculum.subject} ${curriculum.semester}`,
+        unit: lesson.unit,
+        period: lesson.period,
+        topic: lesson.topic
+      }
+    }));
+    setShowCurriculumSelector(false);
+  };
+
+  const handleCreateTable = () => {
+    setShowTableModal(true);
+  };
+
+  const handleEditTable = () => {
+    setShowTableModal(true);
+  };
+
+  const handleDeleteTable = () => {
+    setFormData(prev => ({
+      ...prev,
+      dataTable: undefined
+    }));
+  };
+
+  const handleTableSave = (table: DataTable) => {
+    setFormData(prev => ({
+      ...prev,
+      dataTable: table
+    }));
+  };
+
+  const handleCreateChart = () => {
+    setShowChartModal(true);
+  };
+
+  const handleEditChart = () => {
+    setShowChartModal(true);
+  };
+
+  const handleDeleteChart = () => {
+    setFormData(prev => ({
+      ...prev,
+      barChart: undefined
+    }));
+  };
+
+  const handleChartSave = (chart: BarChartData) => {
+    setFormData(prev => ({
+      ...prev,
+      barChart: chart
     }));
   };
 
@@ -240,12 +305,21 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           🎯 오늘의 탐구 주제를 적으세요
         </label>
         {isEditable && (
-          <AIHelpButton
-            label="주제 예시 부탁하기"
-            icon="💡"
-            onHelp={handleTopicHelp}
-            disabled={!isEditable}
-          />
+          <div className="flex flex-wrap gap-2">
+            <AIHelpButton
+              label="주제 예시 부탁하기"
+              icon="💡"
+              onHelp={handleTopicHelp}
+              disabled={!isEditable}
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurriculumSelector(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl border-2 border-green-500 text-green-600 font-bold hover:bg-green-50 transition-colors"
+            >
+              📚 진도표에서 선택하기
+            </button>
+          </div>
         )}
         <textarea
           value={formData.todayTopic}
@@ -255,6 +329,19 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           rows={2}
           placeholder="예: 식물의 성장 관찰하기"
         />
+        {formData.selectedLessonInfo && (
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-xs md:text-sm font-semibold text-blue-700">
+              <span className="text-[11px] md:text-xs bg-blue-600 text-white rounded-full px-2 py-0.5">
+                진도표
+              </span>
+              <span>
+                {formData.selectedLessonInfo.curriculumName} · {formData.selectedLessonInfo.unit} ·{' '}
+                {formData.selectedLessonInfo.period}차시
+              </span>
+            </span>
+          </div>
+        )}
       </div>
 
       {/* 2. 궁금한 내용 */}
@@ -387,7 +474,111 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         />
       </div>
 
-      {/* 8. 변화된 나의 생각 */}
+      {/* 9. 표 만들기 섹션 */}
+      <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
+        <h3 className="text-xl font-black text-gray-800 mb-2">
+          📊 실험 데이터 표 만들기
+        </h3>
+
+        {formData.dataTable ? (
+          <div className="space-y-4">
+            <div className="overflow-x-auto">
+              <DataTableCreator
+                initialData={formData.dataTable}
+                onSave={handleTableSave}
+                editable={false}
+              />
+            </div>
+            {isEditable && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleEditTable}
+                  className="h-12 px-6 rounded-xl bg-blue-500 text-white font-bold text-lg hover:bg-blue-600 hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                >
+                  ✏️ 표 수정
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteTable}
+                  className="h-12 px-6 rounded-xl bg-red-100 text-red-600 font-bold text-lg hover:bg-red-200 transition-all"
+                >
+                  ❌ 표 삭제
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              아직 표를 만들지 않았어요. 실험에서 모은 데이터를 표로 정리해 보아요.
+            </p>
+            {isEditable && (
+              <button
+                type="button"
+                onClick={handleCreateTable}
+                className="h-12 px-6 rounded-xl bg-blue-500 text-white font-bold text-lg hover:bg-blue-600 hover:shadow-lg hover:-translate-y-0.5 transition-all w-full md:w-auto"
+              >
+                📊 표 만들기
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 10. 그래프 만들기 섹션 */}
+      <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
+        <h3 className="text-xl font-black text-gray-800 mb-2">
+          📈 실험 결과 그래프 그리기
+        </h3>
+
+        {formData.barChart ? (
+          <div className="space-y-4">
+            <div className="overflow-x-auto">
+              <BarChartCreator
+                initialData={formData.barChart}
+                onSave={handleChartSave}
+                editable={false}
+              />
+            </div>
+            {isEditable && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={handleEditChart}
+                  className="h-12 px-6 rounded-xl bg-blue-500 text-white font-bold text-lg hover:bg-blue-600 hover:shadow-lg hover:-translate-y-0.5 transition-all"
+                >
+                  ✏️ 그래프 수정
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDeleteChart}
+                  className="h-12 px-6 rounded-xl bg-red-100 text-red-600 font-bold text-lg hover:bg-red-200 transition-all"
+                >
+                  ❌ 그래프 삭제
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <p className="text-gray-600">
+              아직 그래프를 만들지 않았어요. 위에서 만든 표를 보고, 막대그래프로 나타내 보아요.
+            </p>
+            {isEditable && (
+              <button
+                type="button"
+                onClick={handleCreateChart}
+                className="h-12 px-6 rounded-xl bg-green-500 text-white font-bold text-lg hover:bg-green-600 hover:shadow-lg hover:-translate-y-0.5 transition-all w-full md:w-auto"
+              >
+                📈 그래프 만들기
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 11. 변화된 나의 생각 */}
       <div className="space-y-3">
         <label className="block text-lg font-bold text-gray-700">
           🎨 오늘의 탐구 활동 후에 변화된 나의 생각을 그림, 또는 글로 적으세요
@@ -528,6 +719,37 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           </p>
         </div>
       )}
+
+      {showCurriculumSelector && (
+        <CurriculumSelector
+          onSelectLesson={handleSelectCurriculumLesson}
+          onClose={() => setShowCurriculumSelector(false)}
+        />
+      )}
+
+      <DataCreatorModal
+        isOpen={showTableModal}
+        onClose={() => setShowTableModal(false)}
+        title="📊 실험 데이터 표 만들기"
+      >
+        <DataTableCreator
+          initialData={formData.dataTable}
+          onSave={handleTableSave}
+          editable={isEditable}
+        />
+      </DataCreatorModal>
+
+      <DataCreatorModal
+        isOpen={showChartModal}
+        onClose={() => setShowChartModal(false)}
+        title="📈 실험 결과 그래프 그리기"
+      >
+        <BarChartCreator
+          initialData={formData.barChart}
+          onSave={handleChartSave}
+          editable={isEditable}
+        />
+      </DataCreatorModal>
     </div>
   );
 };

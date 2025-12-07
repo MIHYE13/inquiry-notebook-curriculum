@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import LoginScreen from './components/LoginScreen';
 import MainScreen from './components/MainScreen';
 import { getOrCreateStudent } from './utils/firestore';
