@@ -73,12 +73,46 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     return () => clearInterval(timer);
   }, [formData, isEditable, onSave]);
 
+  // URL 정규화 함수
+  const normalizeUrl = (url: string): string => {
+    if (!url || typeof url !== 'string') return '';
+    
+    let normalized = url.trim();
+    
+    // 빈 문자열 체크
+    if (!normalized) return '';
+    
+    // 이미 http:// 또는 https://로 시작하는지 확인
+    if (normalized.match(/^https?:\/\//i)) {
+      return normalized;
+    }
+    
+    // http:// 또는 https://가 없으면 https:// 추가
+    return 'https://' + normalized;
+  };
+
   const handleAddLink = () => {
     if (!newLink.trim()) return;
 
+    const normalizedUrl = normalizeUrl(newLink.trim());
+    
+    // URL 유효성 검사
+    if (!normalizedUrl) {
+      alert('유효한 링크 주소를 입력해주세요.');
+      return;
+    }
+
+    try {
+      // URL 객체 생성으로 유효성 검사
+      new URL(normalizedUrl);
+    } catch {
+      alert('유효하지 않은 링크 주소입니다. 올바른 형식으로 입력해주세요. (예: https://example.com)');
+      return;
+    }
+
     const newLinkObj = {
       id: Date.now().toString(),
-      url: newLink.trim(),
+      url: normalizedUrl,
       description: linkDescription.trim() || undefined
     };
 
@@ -877,54 +911,110 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
           <div className="space-y-3">
             <h4 className="font-bold text-gray-700">🔗 저장된 링크</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {formData.resources.links.map(link => (
-                <div
-                  key={link.id}
-                  className="relative bg-white rounded-xl border-2 border-blue-200 p-4 hover:border-blue-400 hover:shadow-md transition-all group"
-                >
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="text-3xl flex-shrink-0">🌐</div>
-                      <div className="flex-1 min-w-0">
-                        {link.description ? (
-                          <>
-                            <p className="font-bold text-gray-800 text-sm mb-1 break-words">
-                              {link.description}
-                            </p>
-                            <p className="text-xs text-gray-500 truncate">
-                              {link.url}
-                            </p>
-                          </>
-                        ) : (
-                          <p className="font-semibold text-blue-600 text-sm break-words">
-                            {link.url}
+              {formData.resources.links.map(link => {
+                // URL 정규화 함수 사용
+                const normalizedUrl = normalizeUrl(link.url || '');
+
+                // 유효하지 않은 URL인 경우 처리
+                if (!normalizedUrl) {
+                  return (
+                    <div
+                      key={link.id}
+                      className="relative bg-white rounded-xl border-2 border-red-200 p-4"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl flex-shrink-0">⚠️</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-red-600 text-sm mb-1">
+                            유효하지 않은 링크
                           </p>
-                        )}
-                        <div className="mt-2 text-xs text-blue-500 font-semibold">
-                          클릭하여 링크 열기 →
+                          <p className="text-xs text-gray-500 break-words">
+                            {link.url || '(링크 없음)'}
+                          </p>
                         </div>
                       </div>
+                      {isEditable && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRemoveLink(link.id);
+                          }}
+                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 font-bold text-sm z-10"
+                          title="삭제"
+                        >
+                          ×
+                        </button>
+                      )}
                     </div>
-                  </a>
-                  {isEditable && (
-                    <button
+                  );
+                }
+
+                return (
+                  <div
+                    key={link.id}
+                    className="relative bg-white rounded-xl border-2 border-blue-200 p-4 hover:border-blue-400 hover:shadow-md transition-all group"
+                  >
+                    <a
+                      href={normalizedUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block cursor-pointer"
                       onClick={(e) => {
-                        e.preventDefault();
-                        handleRemoveLink(link.id);
+                        // URL이 유효한지 최종 확인
+                        try {
+                          const url = new URL(normalizedUrl);
+                          // 유효한 URL이면 정상적으로 열림 (기본 동작)
+                          console.log('링크 열기:', normalizedUrl);
+                        } catch (error) {
+                          e.preventDefault();
+                          console.error('유효하지 않은 URL:', normalizedUrl, error);
+                          alert('유효하지 않은 링크 주소입니다: ' + link.url);
+                        }
                       }}
-                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 font-bold text-sm"
-                      title="삭제"
                     >
-                      ×
-                    </button>
-                  )}
-                </div>
-              ))}
+                      <div className="flex items-start gap-3">
+                        <div className="text-3xl flex-shrink-0">🌐</div>
+                        <div className="flex-1 min-w-0">
+                          {link.description ? (
+                            <>
+                              <p className="font-bold text-gray-800 text-sm mb-1 break-words">
+                                {link.description}
+                              </p>
+                              <p className="text-xs text-gray-500 truncate" title={normalizedUrl}>
+                                {normalizedUrl}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="font-semibold text-blue-600 text-sm break-words" title={normalizedUrl}>
+                              {normalizedUrl}
+                            </p>
+                          )}
+                          <div className="mt-2 text-xs text-blue-500 font-semibold flex items-center gap-1">
+                            <span>클릭하여 링크 열기</span>
+                            <span>→</span>
+                          </div>
+                        </div>
+                      </div>
+                    </a>
+                    {isEditable && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation(); // 링크 클릭 이벤트 전파 방지
+                          handleRemoveLink(link.id);
+                        }}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 font-bold text-sm z-10"
+                        title="삭제"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

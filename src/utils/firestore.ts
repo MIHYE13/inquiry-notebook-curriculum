@@ -29,7 +29,23 @@ export async function getOrCreateStudent(
   try {
     const studentId = generateStudentId(name, code);
     const studentRef = doc(db, 'students', studentId);
-    const studentSnap = await getDoc(studentRef);
+    
+    // 네트워크가 오프라인인 경우 재시도
+    let studentSnap;
+    try {
+      studentSnap = await getDoc(studentRef);
+    } catch (error: any) {
+      if (error.code === 'unavailable' || error.message?.includes('offline')) {
+        console.warn('⚠️ Firestore가 오프라인 상태입니다. 네트워크 연결을 확인하세요.');
+        // 네트워크 재연결 시도
+        const { enableFirestoreNetwork } = await import('../firebaseConfig');
+        await enableFirestoreNetwork();
+        // 재시도
+        studentSnap = await getDoc(studentRef);
+      } else {
+        throw error;
+      }
+    }
 
     if (studentSnap.exists()) {
       const data = studentSnap.data();
@@ -51,17 +67,42 @@ export async function getOrCreateStudent(
         lastModified: now
       };
 
-      await setDoc(studentRef, {
-        studentName: name,
-        studentCode: code,
-        createdAt: now,
-        lastModified: now
-      });
+      try {
+        await setDoc(studentRef, {
+          studentName: name,
+          studentCode: code,
+          createdAt: now,
+          lastModified: now
+        });
+      } catch (error: any) {
+        if (error.code === 'unavailable' || error.message?.includes('offline')) {
+          console.warn('⚠️ Firestore가 오프라인 상태입니다. 네트워크 연결을 확인하세요.');
+          const { enableFirestoreNetwork } = await import('../firebaseConfig');
+          await enableFirestoreNetwork();
+          // 재시도
+          await setDoc(studentRef, {
+            studentName: name,
+            studentCode: code,
+            createdAt: now,
+            lastModified: now
+          });
+        } else {
+          throw error;
+        }
+      }
 
       return newStudent;
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('학생 정보 가져오기/생성 오류:', error);
+    
+    // 더 구체적인 에러 메시지
+    if (error.code === 'unavailable' || error.message?.includes('offline')) {
+      throw new Error('인터넷 연결을 확인해주세요. Firebase에 연결할 수 없습니다.');
+    } else if (error.code === 'permission-denied') {
+      throw new Error('Firebase 보안 규칙을 확인해주세요.');
+    }
+    
     throw error;
   }
 }
@@ -73,14 +114,34 @@ export async function getEntry(
 ): Promise<InquiryEntry | null> {
   try {
     const entryRef = doc(db, 'students', studentId, 'entries', date);
-    const entrySnap = await getDoc(entryRef);
+    
+    let entrySnap;
+    try {
+      entrySnap = await getDoc(entryRef);
+    } catch (error: any) {
+      if (error.code === 'unavailable' || error.message?.includes('offline')) {
+        console.warn('⚠️ Firestore가 오프라인 상태입니다. 네트워크 연결을 확인하세요.');
+        // 네트워크 재연결 시도
+        const { enableFirestoreNetwork } = await import('../firebaseConfig');
+        await enableFirestoreNetwork();
+        // 재시도
+        entrySnap = await getDoc(entryRef);
+      } else {
+        throw error;
+      }
+    }
 
     if (entrySnap.exists()) {
       return entrySnap.data() as InquiryEntry;
     }
     return null;
-  } catch (error) {
+  } catch (error: any) {
     console.error('탐구 노트 가져오기 오류:', error);
+    
+    if (error.code === 'unavailable' || error.message?.includes('offline')) {
+      throw new Error('인터넷 연결을 확인해주세요.');
+    }
+    
     throw error;
   }
 }

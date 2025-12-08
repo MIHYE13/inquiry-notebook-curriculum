@@ -27,7 +27,7 @@
  * 자세한 내용은 FEATURE_STATUS.md를 참고하세요.
  */
 import { initializeApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, enableNetwork, disableNetwork } from 'firebase/firestore';
 
 // Firebase 설정은 환경 변수에서 가져옵니다
 const firebaseConfig = {
@@ -39,10 +39,50 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:123456789:web:abcdef'
 };
 
+// Firebase 설정 유효성 검사
+const isFirebaseConfigured = () => {
+  return firebaseConfig.apiKey !== 'your-api-key' &&
+         firebaseConfig.authDomain !== 'your-project.firebaseapp.com' &&
+         firebaseConfig.projectId !== 'your-project-id';
+};
+
 // Firebase 초기화
-const app = initializeApp(firebaseConfig);
+let app;
+try {
+  app = initializeApp(firebaseConfig);
+  
+  // 설정이 올바른지 확인
+  if (!isFirebaseConfigured()) {
+    console.warn('⚠️ Firebase 환경 변수가 설정되지 않았습니다. Netlify 환경 변수를 확인하세요.');
+  }
+} catch (error) {
+  console.error('❌ Firebase 초기화 실패:', error);
+  throw error;
+}
 
 // Firestore 인스턴스
 export const db = getFirestore(app);
+
+// 네트워크 상태 관리 함수
+export const enableFirestoreNetwork = async () => {
+  try {
+    await enableNetwork(db);
+    console.log('✅ Firestore 네트워크 활성화됨');
+  } catch (error) {
+    console.error('❌ Firestore 네트워크 활성화 실패:', error);
+  }
+};
+
+export const disableFirestoreNetwork = async () => {
+  try {
+    await disableNetwork(db);
+    console.log('⚠️ Firestore 네트워크 비활성화됨');
+  } catch (error) {
+    console.error('❌ Firestore 네트워크 비활성화 실패:', error);
+  }
+};
+
+// 초기화 시 네트워크 활성화 시도
+enableFirestoreNetwork().catch(console.error);
 
 export default app;
