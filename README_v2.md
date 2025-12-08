@@ -57,3 +57,5 @@ npm run dev
 - [FEATURE_STATUS.md](./FEATURE_STATUS.md) - 상세한 기능 상태 정리
 - [API_SETUP.md](./API_SETUP.md) - API 설정 가이드
 - [QUICKSTART.md](./QUICKSTART.md) - 빠른 시작 가이드
+- [NETLIFY_DEPLOYMENT.md](./NETLIFY_DEPLOYMENT.md) - Netlify 배포 문제 해결 가이드
+- [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - 일반적인 문제 해결

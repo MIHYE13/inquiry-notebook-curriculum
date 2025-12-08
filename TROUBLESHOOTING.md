@@ -130,11 +130,22 @@ service cloud.firestore {
   status = 200
 ```
 
-#### 문제: 환경 변수가 작동하지 않음
+#### 문제: 환경 변수가 작동하지 않음 / "인터넷 연결이 안된다" 오류
+**원인**: Firebase 환경 변수가 Netlify에 설정되지 않음
+
 **해결**:
 1. Netlify 대시보드 > Site settings > Environment variables
-2. 모든 `VITE_` 변수 추가
-3. 재배포
+2. 다음 6개의 Firebase 환경 변수를 모두 추가:
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+   - `VITE_FIREBASE_APP_ID`
+3. 환경 변수 추가 후 **반드시 재배포** (Deploys > Trigger deploy > Clear cache and deploy site)
+4. Firebase 보안 규칙 확인 (Firestore Database > 규칙)
+
+**자세한 내용**: [NETLIFY_DEPLOYMENT.md](./NETLIFY_DEPLOYMENT.md) 참고
 
 ### 5. 성능 문제
 
