@@ -27,10 +27,31 @@ export type BarChartData = {
   createdAt: string;
 };
 
+export type ScientistNote = {
+  scientistName: string;
+  scientistIcon: string;
+  messages: {
+    role: 'scientist' | 'student';
+    content: string;
+    timestamp: string;
+  }[];
+  createdAt: string;
+};
+
+export type MindMapNode = {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  children?: MindMapNode[];
+};
+
 export type InquiryEntry = {
   date: string; // 'YYYY-MM-DD'
   todayTopic: string;
   questions: string;
+  // 마인드맵 데이터 (questions 대신 사용 가능)
+  mindMapNodes?: MindMapNode[];
   observations: string;
   priorKnowledge: string;
   groupQuestion: string;
@@ -48,8 +69,23 @@ export type InquiryEntry = {
   // 표/그래프 데이터
   dataTable?: DataTable;
   barChart?: BarChartData;
+  // 과학자의 노트
+  scientistNote?: ScientistNote;
+  // 음성 녹음 데이터 (base64 인코딩된 오디오)
+  voiceRecording?: {
+    audioData: string; // base64 인코딩된 오디오 데이터
+    mimeType: string;  // audio/webm 등
+    duration?: number; // 녹음 시간 (초)
+    createdAt: string;
+  };
   resources: {
-    files: { id: string; name: string }[];
+    files: { 
+      id: string; 
+      name: string;
+      type?: string; // MIME type (image/jpeg, application/pdf 등)
+      dataUrl?: string; // base64 인코딩된 파일 데이터 (미리보기용)
+      size?: number; // 파일 크기 (bytes)
+    }[];
     links: { id: string; url: string; description?: string }[];
   };
   aiHelpLogs?: {

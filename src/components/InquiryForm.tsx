@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { InquiryEntry, Curriculum, CurriculumLesson, DataTable, BarChartData } from '../types';
+import { InquiryEntry, Curriculum, CurriculumLesson, DataTable, BarChartData, ScientistNote, MindMapNode } from '../types';
 import DrawingCanvas from './DrawingCanvas';
 import AIHelpButton from './AIHelpButton';
 import CurriculumSelector from './CurriculumSelector';
 import DataCreatorModal from './DataCreatorModal';
 import DataTableCreator from './DataTableCreator';
 import BarChartCreator from './BarChartCreator';
+import ScientistNoteComponent from './ScientistNote';
+import MindMap from './MindMap';
+import VoiceRecorder from './VoiceRecorder';
 import { suggestQuestionsOrHints } from '../api/chatgpt';
 import { searchRecentScienceInfo } from '../api/perplexity';
 import { addAIHelpLog } from '../utils/firestore';
@@ -45,16 +48,30 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     onSave(formData);
   };
 
-  // Auto-save after 2 seconds of inactivity
+  // Auto-save every 30 seconds
   useEffect(() => {
     if (!isEditable) return;
     
-    const timer = setTimeout(() => {
+    // 중요한 필드가 변경되었을 때만 자동 저장
+    const hasContent = 
+      formData.todayTopic.trim() ||
+      formData.questions.trim() ||
+      formData.observations.trim() ||
+      formData.findings.trim() ||
+      formData.reflectionText.trim() ||
+      formData.mindMapNodes ||
+      formData.dataTable ||
+      formData.barChart ||
+      formData.scientistNote;
+    
+    if (!hasContent) return;
+    
+    const timer = setInterval(() => {
       onSave(formData);
-    }, 2000);
+    }, 30000); // 30초마다 저장
 
-    return () => clearTimeout(timer);
-  }, [formData, isEditable]);
+    return () => clearInterval(timer);
+  }, [formData, isEditable, onSave]);
 
   const handleAddLink = () => {
     if (!newLink.trim()) return;
@@ -87,14 +104,56 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     }));
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    const newFiles = Array.from(files).map(file => ({
-      id: Date.now().toString() + Math.random(),
-      name: file.name
-    }));
+    const filePromises = Array.from(files).map((file): Promise<{
+      id: string;
+      name: string;
+      type: string;
+      dataUrl?: string;
+      size: number;
+    }> => {
+      return new Promise((resolve) => {
+        const id = Date.now().toString() + Math.random();
+        const fileType = file.type;
+        const fileSize = file.size;
+
+        // 이미지나 PDF 파일인 경우 미리보기 데이터 생성
+        if (fileType.startsWith('image/') || fileType === 'application/pdf') {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+            resolve({
+              id,
+              name: file.name,
+              type: fileType,
+              dataUrl: reader.result as string,
+              size: fileSize
+            });
+          };
+          reader.onerror = () => {
+            resolve({
+              id,
+              name: file.name,
+              type: fileType,
+              size: fileSize
+            });
+          };
+          reader.readAsDataURL(file);
+        } else {
+          // 다른 파일 타입은 이름만 저장
+          resolve({
+            id,
+            name: file.name,
+            type: fileType,
+            size: fileSize
+          });
+        }
+      });
+    });
+
+    const newFiles = await Promise.all(filePromises);
 
     setFormData(prev => ({
       ...prev,
@@ -177,6 +236,13 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
     setFormData(prev => ({
       ...prev,
       barChart: chart
+    }));
+  };
+
+  const handleScientistNoteSave = (note: ScientistNote | undefined) => {
+    setFormData(prev => ({
+      ...prev,
+      scientistNote: note
     }));
   };
 
@@ -344,27 +410,56 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         )}
       </div>
 
-      {/* 2. 궁금한 내용 */}
+      {/* 2. 궁금한 내용 (마인드맵) */}
       <div className="space-y-3">
-        <label className="block text-lg font-bold text-gray-700">
-          ❓ 궁금한 내용을 적으세요
-        </label>
-        {isEditable && formData.todayTopic && (
-          <AIHelpButton
-            label="질문이 잘 떠오르지 않아요"
-            icon="🤔"
-            onHelp={handleQuestionsHelp}
-            disabled={!isEditable}
-          />
-        )}
-        <textarea
-          value={formData.questions}
-          onChange={(e) => handleChange('questions', e.target.value)}
-          disabled={!isEditable}
-          className="w-full px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400 focus:border-blue-500 disabled:bg-gray-100 disabled:text-gray-600 transition-all resize-none"
-          rows={3}
-          placeholder="무엇이 궁금한가요?"
+        <div className="flex justify-between items-center">
+          <label className="block text-lg font-bold text-gray-700">
+            ❓ 궁금한 내용을 마인드맵으로 정리해보세요
+          </label>
+          {isEditable && formData.todayTopic && (
+            <AIHelpButton
+              label="질문이 잘 떠오르지 않아요"
+              icon="🤔"
+              onHelp={handleQuestionsHelp}
+              disabled={!isEditable}
+            />
+          )}
+        </div>
+        
+        <MindMap
+          initialData={formData.mindMapNodes}
+          onSave={(nodes: MindMapNode[]) => {
+            // 마인드맵 노드들을 텍스트로 변환해서 questions에도 저장 (호환성)
+            const questionsText = nodes
+              .filter(n => n.id !== 'center' && n.id !== nodes[0]?.id)
+              .map(n => n.text)
+              .join('\n');
+            
+            setFormData(prev => ({
+              ...prev,
+              mindMapNodes: nodes,
+              questions: questionsText || prev.questions
+            }));
+          }}
+          editable={isEditable}
+          placeholder="중앙에 주제를 적고, 주변에 궁금한 내용을 추가해보세요"
         />
+        
+        {/* 기존 텍스트 입력 (보조용, 선택사항) */}
+        {isEditable && (
+          <details className="mt-4">
+            <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-800 font-semibold">
+              📝 텍스트로도 입력하기 (선택사항)
+            </summary>
+            <textarea
+              value={formData.questions}
+              onChange={(e) => handleChange('questions', e.target.value)}
+              className="w-full mt-2 px-4 py-3 text-lg border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400 focus:border-blue-500 transition-all resize-none"
+              rows={3}
+              placeholder="마인드맵 대신 텍스트로 입력할 수도 있어요"
+            />
+          </details>
+        )}
       </div>
 
       {/* 3. 관찰한 내용 */}
@@ -610,11 +705,50 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         </div>
       </div>
 
+      {/* 과학자의 노트 */}
+      <div className="space-y-4">
+        <ScientistNoteComponent
+          entry={formData}
+          studentId={studentId}
+          isEditable={isEditable}
+          onSave={handleScientistNoteSave}
+        />
+      </div>
+
       {/* 자료 모으기 */}
       <div className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl p-6 space-y-4">
         <h3 className="text-xl font-black text-gray-800">
           📎 탐구와 관련된 자료(사진, 문서, 링크 등)를 추가해 보세요
         </h3>
+
+        {/* 음성 녹음 섹션 */}
+        <VoiceRecorder
+          initialAudioUrl={formData.voiceRecording ? `data:${formData.voiceRecording.mimeType};base64,${formData.voiceRecording.audioData}` : undefined}
+          onSave={async (audioBlob) => {
+            if (audioBlob) {
+              // Blob을 base64로 변환
+              const reader = new FileReader();
+              reader.onloadend = () => {
+                const base64data = (reader.result as string).split(',')[1];
+                setFormData(prev => ({
+                  ...prev,
+                  voiceRecording: {
+                    audioData: base64data,
+                    mimeType: audioBlob.type || 'audio/webm;codecs=opus',
+                    createdAt: new Date().toISOString()
+                  }
+                }));
+              };
+              reader.readAsDataURL(audioBlob);
+            } else {
+              setFormData(prev => ({
+                ...prev,
+                voiceRecording: undefined
+              }));
+            }
+          }}
+          editable={isEditable}
+        />
 
         {isEditable && (
           <div className="space-y-4">
@@ -631,7 +765,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                 className="hidden"
               />
               <p className="text-sm text-gray-600 mt-2">
-                * 주의: 실제 파일은 저장되지 않고, 파일 이름만 기록됩니다.
+                * 이미지와 PDF 파일은 미리보기로 표시됩니다. 파일 크기는 5MB 이하로 권장합니다.
               </p>
             </div>
 
@@ -661,47 +795,137 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
         )}
 
         {formData.resources.files.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-4">
             <h4 className="font-bold text-gray-700">📂 첨부된 파일</h4>
-            {formData.resources.files.map(file => (
-              <div key={file.id} className="flex justify-between items-center bg-white p-3 rounded-lg border-2 border-gray-200">
-                <span className="text-gray-700">📄 {file.name}</span>
-                {isEditable && (
-                  <button
-                    onClick={() => handleRemoveFile(file.id)}
-                    className="text-red-500 hover:text-red-700 font-bold text-xl"
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {formData.resources.files.map(file => {
+                const isImage = file.type?.startsWith('image/');
+                const isPDF = file.type === 'application/pdf';
+                
+                return (
+                  <div
+                    key={file.id}
+                    className="relative bg-white rounded-xl border-2 border-gray-200 overflow-hidden hover:shadow-lg transition-all group"
                   >
-                    ×
-                  </button>
-                )}
-              </div>
-            ))}
+                    {/* 미리보기 */}
+                    {isImage && file.dataUrl ? (
+                      <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={file.dataUrl}
+                          alt={file.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : isPDF && file.dataUrl ? (
+                      <div className="aspect-square bg-red-50 flex flex-col items-center justify-center p-4">
+                        <div className="text-6xl mb-2">📄</div>
+                        <p className="text-xs text-center text-gray-600 font-semibold break-words">
+                          PDF 파일
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="aspect-square bg-gray-100 flex flex-col items-center justify-center p-4">
+                        <div className="text-6xl mb-2">📎</div>
+                        <p className="text-xs text-center text-gray-600 font-semibold break-words">
+                          {file.name}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 파일 정보 */}
+                    <div className="p-3">
+                      <p className="text-xs font-semibold text-gray-700 truncate" title={file.name}>
+                        {file.name}
+                      </p>
+                      {file.size && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {(file.size / 1024).toFixed(1)} KB
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 삭제 버튼 */}
+                    {isEditable && (
+                      <button
+                        onClick={() => handleRemoveFile(file.id)}
+                        className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 font-bold text-sm"
+                        title="삭제"
+                      >
+                        ×
+                      </button>
+                    )}
+
+                    {/* PDF 미리보기 버튼 (PDF인 경우) */}
+                    {isPDF && file.dataUrl && (
+                      <a
+                        href={file.dataUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute bottom-2 left-2 right-2 bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-lg hover:bg-blue-600 transition-colors text-center"
+                      >
+                        📖 PDF 보기
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
 
         {formData.resources.links.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-3">
             <h4 className="font-bold text-gray-700">🔗 저장된 링크</h4>
-            {formData.resources.links.map(link => (
-              <div key={link.id} className="flex justify-between items-center bg-white p-3 rounded-lg border-2 border-gray-200">
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-800 font-semibold underline break-all"
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {formData.resources.links.map(link => (
+                <div
+                  key={link.id}
+                  className="relative bg-white rounded-xl border-2 border-blue-200 p-4 hover:border-blue-400 hover:shadow-md transition-all group"
                 >
-                  🌐 {link.description || link.url}
-                </a>
-                {isEditable && (
-                  <button
-                    onClick={() => handleRemoveLink(link.id)}
-                    className="text-red-500 hover:text-red-700 font-bold text-xl ml-2"
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block"
                   >
-                    ×
-                  </button>
-                )}
-              </div>
-            ))}
+                    <div className="flex items-start gap-3">
+                      <div className="text-3xl flex-shrink-0">🌐</div>
+                      <div className="flex-1 min-w-0">
+                        {link.description ? (
+                          <>
+                            <p className="font-bold text-gray-800 text-sm mb-1 break-words">
+                              {link.description}
+                            </p>
+                            <p className="text-xs text-gray-500 truncate">
+                              {link.url}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="font-semibold text-blue-600 text-sm break-words">
+                            {link.url}
+                          </p>
+                        )}
+                        <div className="mt-2 text-xs text-blue-500 font-semibold">
+                          클릭하여 링크 열기 →
+                        </div>
+                      </div>
+                    </div>
+                  </a>
+                  {isEditable && (
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleRemoveLink(link.id);
+                      }}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 font-bold text-sm"
+                      title="삭제"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import LoginScreen from './components/LoginScreen';
 import MainScreen from './components/MainScreen';
+import TeacherDashboard from './components/TeacherDashboard';
 import { getOrCreateStudent } from './utils/firestore';
 
 function App() {
@@ -9,13 +10,18 @@ function App() {
     name: string;
     code: string;
   } | null>(null);
+  const [isTeacher, setIsTeacher] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // localStorage에서 이전 세션 복원 시도
     const savedStudent = localStorage.getItem('currentStudent');
-    if (savedStudent) {
+    const savedIsTeacher = localStorage.getItem('isTeacher') === 'true';
+    
+    if (savedIsTeacher) {
+      setIsTeacher(true);
+    } else if (savedStudent) {
       try {
         const student = JSON.parse(savedStudent);
         setCurrentStudent(student);
@@ -48,9 +54,18 @@ function App() {
     }
   };
 
+  const handleTeacherLogin = () => {
+    setIsTeacher(true);
+    setCurrentStudent(null);
+    localStorage.setItem('isTeacher', 'true');
+    localStorage.removeItem('currentStudent');
+  };
+
   const handleLogout = () => {
     setCurrentStudent(null);
+    setIsTeacher(false);
     localStorage.removeItem('currentStudent');
+    localStorage.removeItem('isTeacher');
   };
 
   if (error) {
@@ -74,8 +89,12 @@ function App() {
     );
   }
 
+  if (isTeacher) {
+    return <TeacherDashboard onLogout={handleLogout} />;
+  }
+
   if (!currentStudent) {
-    return <LoginScreen onLogin={handleLogin} isLoading={isLoading} />;
+    return <LoginScreen onLogin={handleLogin} onTeacherLogin={handleTeacherLogin} isLoading={isLoading} />;
   }
 
   return (

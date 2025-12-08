@@ -42,4 +42,18 @@ npm run dev
 - 🎨 그림으로 표현
 - 📎 자료 추가
 
-## 전체 기능 및 상세 설명은 위 내용 참조
+## 📋 기능 상태
+
+현재 프로젝트의 작동하는 기능과 작동하지 않는 기능을 확인하려면 [FEATURE_STATUS.md](./FEATURE_STATUS.md)를 참고하세요.
+
+### 빠른 요약
+- ✅ **기본 기능**: Firebase만 설정하면 모든 기본 기능 사용 가능
+- ⚠️ **AI 기능**: ChatGPT/Perplexity API 키 필요 (선택사항)
+- ✅ **작동하는 기능**: 로그인, 탐구 노트 작성, 표/그래프, 마인드맵, 음성 녹음, 파일 업로드 등
+- ⚠️ **조건부 작동**: AI 도움 기능, 과학자의 노트, 최신 정보 검색 (API 키 필요)
+
+## 📚 추가 문서
+
+- [FEATURE_STATUS.md](./FEATURE_STATUS.md) - 상세한 기능 상태 정리
+- [API_SETUP.md](./API_SETUP.md) - API 설정 가이드
+- [QUICKSTART.md](./QUICKSTART.md) - 빠른 시작 가이드

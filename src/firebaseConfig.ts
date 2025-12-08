@@ -1,3 +1,25 @@
+/**
+ * Firebase 설정 모듈
+ * 
+ * ✅ 필수 설정: Firebase는 모든 데이터 저장 기능에 필요합니다.
+ * 
+ * 환경 변수:
+ * - VITE_FIREBASE_API_KEY: Firebase API 키 (필수)
+ * - VITE_FIREBASE_AUTH_DOMAIN: 인증 도메인 (필수)
+ * - VITE_FIREBASE_PROJECT_ID: 프로젝트 ID (필수)
+ * - VITE_FIREBASE_STORAGE_BUCKET: 스토리지 버킷 (필수)
+ * - VITE_FIREBASE_MESSAGING_SENDER_ID: 메시징 발신자 ID (필수)
+ * - VITE_FIREBASE_APP_ID: 앱 ID (필수)
+ * 
+ * 기능:
+ * - 학생 데이터 저장
+ * - 탐구 노트 저장
+ * - 실시간 동기화
+ * - 교사 대시보드 데이터 조회
+ * 
+ * Firebase 설정이 없으면 대부분의 기능이 작동하지 않습니다.
+ * 자세한 내용은 FEATURE_STATUS.md를 참고하세요.
+ */
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 

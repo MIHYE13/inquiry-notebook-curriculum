@@ -1,3 +1,19 @@
+/**
+ * Perplexity API 통합 모듈
+ * 
+ * ⚠️ 작동 조건: Perplexity API 키가 .env 파일에 설정되어 있어야 합니다.
+ * - VITE_PERPLEXITY_API_KEY: Perplexity API 키 (필수)
+ * - VITE_PERPLEXITY_API_ENDPOINT: API 엔드포인트 (기본값: https://api.perplexity.ai/chat/completions)
+ * 
+ * 기능:
+ * - 최신 과학 정보 검색
+ * - 배경 지식 제공
+ * - 탐구 방법 정보 검색
+ * - 비교 정보 검색
+ * 
+ * API 키가 없으면 오류 메시지가 반환됩니다.
+ * 자세한 내용은 FEATURE_STATUS.md를 참고하세요.
+ */
 import { PerplexityPurpose, AIResponse } from '../types';
 
 const API_KEY = import.meta.env.VITE_PERPLEXITY_API_KEY || '';

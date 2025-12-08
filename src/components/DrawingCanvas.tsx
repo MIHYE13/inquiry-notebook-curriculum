@@ -60,8 +60,12 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     if (!ctx) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    // canvas의 실제 크기와 표시 크기의 비율 계산
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const x = (e.clientX - rect.left) * scaleX;
+    const y = (e.clientY - rect.top) * scaleY;
 
     ctx.strokeStyle = color;
     ctx.lineWidth = lineWidth;
@@ -153,6 +157,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
           className={`border-2 border-gray-400 rounded-lg bg-white w-full max-w-full ${
             disabled ? 'cursor-not-allowed opacity-70' : 'cursor-crosshair'
           }`}
+          style={{ touchAction: 'none' }}
         />
         {disabled && (
           <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 rounded-lg">

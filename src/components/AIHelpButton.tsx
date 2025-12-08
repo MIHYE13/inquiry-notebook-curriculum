@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
 
+/**
+ * AI 도움 버튼 컴포넌트
+ * 
+ * ⚠️ 작동 조건: ChatGPT API 키가 .env 파일에 설정되어 있어야 합니다.
+ * - VITE_OPENAI_API_KEY: OpenAI API 키
+ * - VITE_OPENAI_API_ENDPOINT: API 엔드포인트 (기본값: https://api.openai.com/v1/chat/completions)
+ * - VITE_OPENAI_MODEL: 사용할 모델 (기본값: gpt-4o-mini)
+ * 
+ * API 키가 없으면 오류 메시지가 표시됩니다.
+ * 자세한 내용은 FEATURE_STATUS.md를 참고하세요.
+ */
 interface AIHelpButtonProps {
   label: string;
   icon: string;

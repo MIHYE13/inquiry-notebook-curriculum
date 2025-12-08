@@ -68,6 +68,7 @@ const MainScreen: React.FC<MainScreenProps> = ({ studentId, studentName, onLogou
       date,
       todayTopic: '',
       questions: '',
+      mindMapNodes: undefined,
       observations: '',
       priorKnowledge: '',
       groupQuestion: '',
@@ -76,6 +77,8 @@ const MainScreen: React.FC<MainScreenProps> = ({ studentId, studentName, onLogou
       reflectionText: '',
       dataTable: undefined,
       barChart: undefined,
+      scientistNote: undefined,
+      voiceRecording: undefined,
       resources: {
         files: [],
         links: []
@@ -85,6 +88,9 @@ const MainScreen: React.FC<MainScreenProps> = ({ studentId, studentName, onLogou
 
   async function handleSave(entry: InquiryEntry) {
     try {
+      // 저장 중 표시
+      setIsLoading(true);
+      
       await saveEntry(studentId, entry);
       setCurrentEntry(entry);
       
@@ -93,9 +99,23 @@ const MainScreen: React.FC<MainScreenProps> = ({ studentId, studentName, onLogou
       setAllEntries([entry, ...updatedEntries].sort((a, b) => b.date.localeCompare(a.date)));
       
       showToastMessage('저장되었습니다! ✅');
-    } catch (error) {
+    } catch (error: any) {
       console.error('저장 실패:', error);
-      showToastMessage('저장에 실패했어요. 다시 시도해주세요.');
+      
+      // 더 구체적인 에러 메시지
+      let errorMessage = '저장에 실패했어요. 다시 시도해주세요.';
+      
+      if (error.code === 'permission-denied') {
+        errorMessage = '저장 권한이 없어요. Firebase 설정을 확인해주세요.';
+      } else if (error.code === 'unavailable') {
+        errorMessage = '인터넷 연결을 확인해주세요. 오프라인 모드에서는 저장되지 않아요.';
+      } else if (error.message) {
+        errorMessage = `저장 오류: ${error.message}`;
+      }
+      
+      showToastMessage(errorMessage);
+    } finally {
+      setIsLoading(false);
     }
   }
 

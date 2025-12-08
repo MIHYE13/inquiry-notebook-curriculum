@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 
 interface LoginScreenProps {
   onLogin: (name: string, code: string) => void;
+  onTeacherLogin?: () => void;
   isLoading?: boolean;
 }
 
-const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false }) => {
+const TEACHER_CODE = 'cheongdam2025';
+
+const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, onTeacherLogin, isLoading = false }) => {
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
@@ -20,6 +23,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false })
 
     if (!code.trim()) {
       setError('비밀번호를 입력해주세요.');
+      return;
+    }
+
+    // 교사 인증번호 체크
+    if (code.trim() === TEACHER_CODE && onTeacherLogin) {
+      setError('');
+      onTeacherLogin();
       return;
     }
 
@@ -59,7 +69,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false })
 
           <div>
             <label htmlFor="code" className="block text-lg font-bold text-gray-700 mb-2">
-              비밀번호
+              비밀번호 {onTeacherLogin && <span className="text-sm text-gray-500 font-normal">(교사는 인증번호 입력)</span>}
             </label>
             <input
               id="code"
@@ -67,7 +77,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin, isLoading = false })
               value={code}
               onChange={(e) => setCode(e.target.value)}
               className="w-full px-4 py-3 text-xl border-3 border-gray-300 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400 focus:border-blue-500 transition-all"
-              placeholder="1234"
+              placeholder={onTeacherLogin ? "학생: 1234 / 교사: 인증번호" : "1234"}
               disabled={isLoading}
             />
           </div>
