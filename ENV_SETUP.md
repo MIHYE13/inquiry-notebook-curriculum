@@ -168,3 +168,4 @@ VITE_PERPLEXITY_API_ENDPOINT=https://api.perplexity.ai/chat/completions
 - [NETLIFY_DEPLOYMENT.md](./NETLIFY_DEPLOYMENT.md) - Netlify 배포 가이드
 - [FIREBASE_SECURITY.md](./FIREBASE_SECURITY.md) - Firebase 보안 가이드
 
+
