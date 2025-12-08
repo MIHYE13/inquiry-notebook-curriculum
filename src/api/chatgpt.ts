@@ -1,10 +1,7 @@
 /**
  * OpenAI ChatGPT API 통합 모듈
  * 
- * ⚠️ 작동 조건: OpenAI API 키가 .env 파일에 설정되어 있어야 합니다.
- * - VITE_OPENAI_API_KEY: OpenAI API 키 (필수)
- * - VITE_OPENAI_API_ENDPOINT: API 엔드포인트 (기본값: https://api.openai.com/v1/chat/completions)
- * - VITE_OPENAI_MODEL: 사용할 모델 (기본값: gpt-4o-mini)
+ * ✅ 보안 개선: Netlify Functions를 통해 API 키를 서버 사이드에서만 사용합니다.
  * 
  * 기능:
  * - 탐구 주제 추천
@@ -13,25 +10,107 @@
  * - 생각 정리 도움
  * - 과학자의 노트 생성 (대화형)
  * 
- * API 키가 없으면 오류 메시지가 반환됩니다.
- * 자세한 내용은 FEATURE_STATUS.md를 참고하세요.
+ * Netlify 배포 시: Netlify Functions 사용 (API 키는 서버에서만 사용)
+ * 로컬 개발 시: VITE_OPENAI_API_KEY 환경 변수 사용 (fallback)
+ * 
+ * 자세한 내용은 NETLIFY_FUNCTIONS_GUIDE.md를 참고하세요.
  */
 import { AIHelpType, AIResponse } from '../types';
 
-// 환경 변수 로딩 (런타임에서 확인)
-const API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
-const API_ENDPOINT = import.meta.env.VITE_OPENAI_API_ENDPOINT || 'https://api.openai.com/v1/chat/completions';
-const MODEL = import.meta.env.VITE_OPENAI_MODEL || 'gpt-4o-mini';
+// Netlify Functions 엔드포인트
+const NETLIFY_FUNCTION_URL = '/.netlify/functions/chatgpt';
+
+// 로컬 개발용 환경 변수 (fallback)
+const LOCAL_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
+const LOCAL_API_ENDPOINT = import.meta.env.VITE_OPENAI_API_ENDPOINT || 'https://api.openai.com/v1/chat/completions';
+const LOCAL_MODEL = import.meta.env.VITE_OPENAI_MODEL || 'gpt-4o-mini';
+
+// Netlify Functions를 사용할지 로컬 API를 사용할지 결정
+const USE_NETLIFY_FUNCTIONS = typeof window !== 'undefined' && !window.location.hostname.includes('localhost');
 
 // 환경 변수 로딩 확인 (디버깅용 - 개발 환경에서만)
 if (typeof window !== 'undefined' && import.meta.env.DEV) {
   console.log('🤖 ChatGPT API 설정 확인:', {
-    hasApiKey: !!API_KEY,
-    apiKeyLength: API_KEY ? API_KEY.length : 0,
-    apiKeyPrefix: API_KEY ? API_KEY.substring(0, 10) + '...' : '없음',
-    endpoint: API_ENDPOINT,
-    model: MODEL
+    useNetlifyFunctions: USE_NETLIFY_FUNCTIONS,
+    hasLocalApiKey: !!LOCAL_API_KEY,
+    functionUrl: NETLIFY_FUNCTION_URL
   });
+}
+
+// Netlify Function을 통한 API 호출 헬퍼 함수
+async function callChatGPTAPI(messages: Array<{ role: string; content: string }>, model: string = LOCAL_MODEL, temperature: number = 0.7, max_tokens: number = 500): Promise<AIResponse> {
+  if (USE_NETLIFY_FUNCTIONS) {
+    // Netlify Functions 사용 (프로덕션)
+    try {
+      const response = await fetch(NETLIFY_FUNCTION_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages,
+          model,
+          temperature,
+          max_tokens,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(`Netlify Function 오류: ${response.status} - ${errorData.error || '알 수 없는 오류'}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Netlify Function 호출 오류:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Netlify Function 호출에 실패했습니다.'
+      };
+    }
+  } else {
+    // 로컬 개발 환경 (fallback)
+    if (!LOCAL_API_KEY || LOCAL_API_KEY === '') {
+      return {
+        success: false,
+        error: 'OpenAI API 키가 설정되지 않았습니다. .env 파일에 VITE_OPENAI_API_KEY를 설정하거나 Netlify에 배포하세요.'
+      };
+    }
+
+    try {
+      const response = await fetch(LOCAL_API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${LOCAL_API_KEY}`
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature,
+          max_tokens
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API 요청 실패: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiResponse = data.choices[0]?.message?.content || '응답을 받지 못했습니다.';
+
+      return {
+        success: true,
+        data: aiResponse
+      };
+    } catch (error) {
+      console.error('ChatGPT API 오류:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.'
+      };
+    }
+  }
 }
 
 // 과학자의 노트 생성 (대화 컨텍스트 포함)
@@ -46,13 +125,6 @@ export async function generateScientistNote(
   },
   conversationHistory?: Array<{ role: 'scientist' | 'student'; content: string }>
 ): Promise<AIResponse> {
-  if (!API_KEY || API_KEY === '') {
-    return {
-      success: false,
-      error: 'OpenAI API 키가 설정되지 않았습니다.'
-    };
-  }
-
   try {
     const scientistPrompts: Record<string, string> = {
       '에디슨': '너는 발명왕 토마스 에디슨이야. 실험과 관찰을 중시하며, 실용적인 발명에 관심이 많아. 초등학교 4학년 학생에게 친근하고 격려하는 말투로 대화해줘.',
@@ -103,31 +175,7 @@ export async function generateScientistNote(
       });
     }
 
-    const response = await fetch(API_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: messages,
-        temperature: 0.8,
-        max_tokens: 500
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`API 요청 실패: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const aiResponse = data.choices[0]?.message?.content || '응답을 받지 못했습니다.';
-
-    return {
-      success: true,
-      data: aiResponse
-    };
+    return await callChatGPTAPI(messages, LOCAL_MODEL, 0.8, 500);
   } catch (error) {
     console.error('ChatGPT API 오류:', error);
     return {
@@ -147,50 +195,21 @@ export async function suggestQuestionsOrHints(
     priorKnowledge?: string;
   }
 ): Promise<AIResponse> {
-  if (!API_KEY || API_KEY === '') {
-    return {
-      success: false,
-      error: 'OpenAI API 키가 설정되지 않았습니다. 환경 변수를 확인해주세요.'
-    };
-  }
-
   try {
     const prompt = buildPrompt(type, currentData);
 
-    const response = await fetch(API_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
+    const messages = [
+      {
+        role: 'system',
+        content: '너는 초등학교 4학년 학생들의 과학 탐구를 돕는 친절한 선생님이야. 학생들이 이해하기 쉽게, 따뜻하고 격려하는 말투로 답변해줘. 답변은 2-4문장 정도로 간결하게 해줘.'
       },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          {
-            role: 'system',
-            content: '너는 초등학교 4학년 학생들의 과학 탐구를 돕는 친절한 선생님이야. 학생들이 이해하기 쉽게, 따뜻하고 격려하는 말투로 답변해줘. 답변은 2-4문장 정도로 간결하게 해줘.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 500
-      })
-    });
+      {
+        role: 'user',
+        content: prompt
+      }
+    ];
 
-    if (!response.ok) {
-      throw new Error(`API 요청 실패: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const aiResponse = data.choices[0]?.message?.content || '응답을 받지 못했습니다.';
-
-    return {
-      success: true,
-      data: aiResponse
-    };
+    return await callChatGPTAPI(messages, LOCAL_MODEL, 0.7, 500);
   } catch (error) {
     console.error('ChatGPT API 오류:', error);
     return {
