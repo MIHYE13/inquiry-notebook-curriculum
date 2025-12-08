@@ -14,12 +14,21 @@
 ## 🚀 빠른 시작
 
 ```bash
-cd inquiry-notebook-v2
+# 프로젝트 클론 후
 npm install
+
+# .env 파일 생성 (템플릿 복사)
 cp .env.example .env
-# .env 파일에 API 키 입력
+
+# .env 파일에 Firebase 설정 정보 입력
+# Firebase Console에서 웹 앱 설정 정보를 복사하여 입력하세요
+# 자세한 방법은 ENV_SETUP.md 참고
+
+# 개발 서버 실행
 npm run dev
 ```
+
+**환경 변수 설정**: [ENV_SETUP.md](./ENV_SETUP.md) 참고
 
 ## 📚 진도표 사용법
 

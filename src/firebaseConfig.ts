@@ -6,10 +6,17 @@
  * 🔒 보안 참고사항:
  * - Firebase 클라이언트 API 키는 공개되어도 안전합니다 (브라우저 앱이므로 어차피 노출됨)
  * - 실제 보안은 Firestore Security Rules로 관리됩니다
- * - .env 파일은 Git에 커밋하지 마세요 (로컬 설정을 공유하지 않기 위해)
- * - 자세한 내용은 FIREBASE_SECURITY.md를 참고하세요
+ * - .env 파일에 키를 저장하고 Git에 커밋하지 마세요 (.env는 .gitignore에 포함됨)
+ * - .env.example 파일은 템플릿으로만 사용하세요 (실제 키 없음)
+ * - Netlify 배포 시에는 Netlify 환경 변수에 설정해야 합니다
+ * - 자세한 내용은 ENV_SETUP.md와 FIREBASE_SECURITY.md를 참고하세요
  * 
- * 환경 변수:
+ * 환경 변수 설정:
+ * 1. .env.example을 .env로 복사: cp .env.example .env
+ * 2. .env 파일에 Firebase Console에서 복사한 실제 값 입력
+ * 3. 개발 서버 실행: npm run dev
+ * 
+ * 환경 변수 목록:
  * - VITE_FIREBASE_API_KEY: Firebase API 키 (필수)
  * - VITE_FIREBASE_AUTH_DOMAIN: 인증 도메인 (필수)
  * - VITE_FIREBASE_PROJECT_ID: 프로젝트 ID (필수)
