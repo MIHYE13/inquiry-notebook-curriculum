@@ -59,6 +59,15 @@
 
 ## ⚠️ 조건부 작동 기능 (API 키 필요)
 
+### YouTube 동영상 검색 (선택사항)
+- ⚠️ **YouTube Data API 키 필요**: `VITE_YOUTUBE_API_KEY` 환경 변수 설정 필요
+- ⚠️ **기능**: 과학 탐구 주제와 관련된 YouTube 동영상 검색
+- ⚠️ **설정 방법**: Google Cloud Console에서 YouTube Data API v3 활성화 후 API 키 발급
+- ⚠️ **가격**: 무료 할당량: 10,000 units/일 (충분함)
+- 📝 **참고**: YouTube API는 현재 코드에 통합되어 있지만, UI에서 사용하려면 추가 컴포넌트가 필요합니다.
+
+## ⚠️ 조건부 작동 기능 (API 키 필요 - 기존)
+
 ### 1. AI 도움 기능 (ChatGPT API 필요)
 
 #### 작동 조건

@@ -18,9 +18,21 @@
  */
 import { AIHelpType, AIResponse } from '../types';
 
+// 환경 변수 로딩 (런타임에서 확인)
 const API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
 const API_ENDPOINT = import.meta.env.VITE_OPENAI_API_ENDPOINT || 'https://api.openai.com/v1/chat/completions';
 const MODEL = import.meta.env.VITE_OPENAI_MODEL || 'gpt-4o-mini';
+
+// 환경 변수 로딩 확인 (디버깅용 - 개발 환경에서만)
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  console.log('🤖 ChatGPT API 설정 확인:', {
+    hasApiKey: !!API_KEY,
+    apiKeyLength: API_KEY ? API_KEY.length : 0,
+    apiKeyPrefix: API_KEY ? API_KEY.substring(0, 10) + '...' : '없음',
+    endpoint: API_ENDPOINT,
+    model: MODEL
+  });
+}
 
 // 과학자의 노트 생성 (대화 컨텍스트 포함)
 export async function generateScientistNote(

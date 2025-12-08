@@ -16,8 +16,19 @@
  */
 import { PerplexityPurpose, AIResponse } from '../types';
 
+// 환경 변수 로딩 (런타임에서 확인)
 const API_KEY = import.meta.env.VITE_PERPLEXITY_API_KEY || '';
 const API_ENDPOINT = import.meta.env.VITE_PERPLEXITY_API_ENDPOINT || 'https://api.perplexity.ai/chat/completions';
+
+// 환경 변수 로딩 확인 (디버깅용 - 개발 환경에서만)
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  console.log('🔍 Perplexity API 설정 확인:', {
+    hasApiKey: !!API_KEY,
+    apiKeyLength: API_KEY ? API_KEY.length : 0,
+    apiKeyPrefix: API_KEY ? API_KEY.substring(0, 10) + '...' : '없음',
+    endpoint: API_ENDPOINT
+  });
+}
 
 export async function searchRecentScienceInfo(
   purpose: PerplexityPurpose,

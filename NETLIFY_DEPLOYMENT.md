@@ -49,6 +49,9 @@ Netlify에 배포한 후 "접속에 실패했어요. 인터넷 연결을 확인�
    - `VITE_PERPLEXITY_API_KEY`
    - `VITE_PERPLEXITY_API_ENDPOINT` (기본값: `https://api.perplexity.ai/chat/completions`)
 
+   YouTube Data API를 사용하는 경우:
+   - `VITE_YOUTUBE_API_KEY` (Google Cloud Console에서 발급)
+
 ### 2단계: 사이트 재배포
 
 환경 변수를 추가한 후 **반드시 재배포**해야 합니다:
@@ -109,6 +112,9 @@ service cloud.firestore {
 - [ ] Netlify에 `VITE_FIREBASE_STORAGE_BUCKET` 환경 변수가 설정되어 있나요?
 - [ ] Netlify에 `VITE_FIREBASE_MESSAGING_SENDER_ID` 환경 변수가 설정되어 있나요?
 - [ ] Netlify에 `VITE_FIREBASE_APP_ID` 환경 변수가 설정되어 있나요?
+- [ ] (선택) Netlify에 `VITE_OPENAI_API_KEY` 환경 변수가 설정되어 있나요? (AI 기능 사용 시)
+- [ ] (선택) Netlify에 `VITE_PERPLEXITY_API_KEY` 환경 변수가 설정되어 있나요? (최신 정보 검색 사용 시)
+- [ ] (선택) Netlify에 `VITE_YOUTUBE_API_KEY` 환경 변수가 설정되어 있나요? (YouTube 검색 사용 시)
 - [ ] 환경 변수 추가 후 재배포를 했나요?
 - [ ] Firebase Firestore 보안 규칙이 올바르게 설정되어 있나요?
 - [ ] Firebase Console에서 Firestore Database가 활성화되어 있나요?

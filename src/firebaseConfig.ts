@@ -46,6 +46,17 @@ const firebaseConfig = {
   appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:123456789:web:abcdef'
 };
 
+// 환경 변수 로딩 확인 (디버깅용 - 개발 환경에서만)
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  console.log('🔥 Firebase 설정 확인:', {
+    hasApiKey: !!firebaseConfig.apiKey && firebaseConfig.apiKey !== 'your-api-key',
+    hasAuthDomain: !!firebaseConfig.authDomain && firebaseConfig.authDomain !== 'your-project.firebaseapp.com',
+    hasProjectId: !!firebaseConfig.projectId && firebaseConfig.projectId !== 'your-project-id',
+    projectId: firebaseConfig.projectId,
+    authDomain: firebaseConfig.authDomain
+  });
+}
+
 // Firebase 설정 유효성 검사
 const isFirebaseConfigured = () => {
   const isConfigured = firebaseConfig.apiKey !== 'your-api-key' &&

@@ -130,6 +130,9 @@ VITE_OPENAI_MODEL=gpt-4o-mini
 # Perplexity 설정 (선택사항)
 VITE_PERPLEXITY_API_KEY=pplx-abc123...
 VITE_PERPLEXITY_API_ENDPOINT=https://api.perplexity.ai/chat/completions
+
+# YouTube Data API 설정 (선택사항)
+VITE_YOUTUBE_API_KEY=your-youtube-api-key-here
 ```
 
 ---
