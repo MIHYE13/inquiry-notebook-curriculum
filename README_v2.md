@@ -58,4 +58,5 @@ npm run dev
 - [API_SETUP.md](./API_SETUP.md) - API 설정 가이드
 - [QUICKSTART.md](./QUICKSTART.md) - 빠른 시작 가이드
 - [NETLIFY_DEPLOYMENT.md](./NETLIFY_DEPLOYMENT.md) - Netlify 배포 문제 해결 가이드
+- [FIREBASE_SECURITY.md](./FIREBASE_SECURITY.md) - Firebase 보안 가이드 (API 키 노출 관련)
 - [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - 일반적인 문제 해결

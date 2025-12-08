@@ -3,6 +3,12 @@
  * 
  * ✅ 필수 설정: Firebase는 모든 데이터 저장 기능에 필요합니다.
  * 
+ * 🔒 보안 참고사항:
+ * - Firebase 클라이언트 API 키는 공개되어도 안전합니다 (브라우저 앱이므로 어차피 노출됨)
+ * - 실제 보안은 Firestore Security Rules로 관리됩니다
+ * - .env 파일은 Git에 커밋하지 마세요 (로컬 설정을 공유하지 않기 위해)
+ * - 자세한 내용은 FIREBASE_SECURITY.md를 참고하세요
+ * 
  * 환경 변수:
  * - VITE_FIREBASE_API_KEY: Firebase API 키 (필수)
  * - VITE_FIREBASE_AUTH_DOMAIN: 인증 도메인 (필수)
