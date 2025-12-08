@@ -41,9 +41,30 @@ const firebaseConfig = {
 
 // Firebase 설정 유효성 검사
 const isFirebaseConfigured = () => {
-  return firebaseConfig.apiKey !== 'your-api-key' &&
-         firebaseConfig.authDomain !== 'your-project.firebaseapp.com' &&
-         firebaseConfig.projectId !== 'your-project-id';
+  const isConfigured = firebaseConfig.apiKey !== 'your-api-key' &&
+                       firebaseConfig.apiKey !== '' &&
+                       firebaseConfig.authDomain !== 'your-project.firebaseapp.com' &&
+                       firebaseConfig.authDomain !== '' &&
+                       firebaseConfig.projectId !== 'your-project-id' &&
+                       firebaseConfig.projectId !== '';
+  
+  if (!isConfigured) {
+    console.error('❌ Firebase 환경 변수가 설정되지 않았습니다!');
+    console.error('현재 설정:', {
+      apiKey: firebaseConfig.apiKey ? `${firebaseConfig.apiKey.substring(0, 10)}...` : '없음',
+      authDomain: firebaseConfig.authDomain || '없음',
+      projectId: firebaseConfig.projectId || '없음'
+    });
+    console.error('Netlify 환경 변수를 확인하세요:');
+    console.error('- VITE_FIREBASE_API_KEY');
+    console.error('- VITE_FIREBASE_AUTH_DOMAIN');
+    console.error('- VITE_FIREBASE_PROJECT_ID');
+    console.error('- VITE_FIREBASE_STORAGE_BUCKET');
+    console.error('- VITE_FIREBASE_MESSAGING_SENDER_ID');
+    console.error('- VITE_FIREBASE_APP_ID');
+  }
+  
+  return isConfigured;
 };
 
 // Firebase 초기화
@@ -54,9 +75,19 @@ try {
   // 설정이 올바른지 확인
   if (!isFirebaseConfigured()) {
     console.warn('⚠️ Firebase 환경 변수가 설정되지 않았습니다. Netlify 환경 변수를 확인하세요.');
+  } else {
+    console.log('✅ Firebase 초기화 성공:', {
+      projectId: firebaseConfig.projectId,
+      authDomain: firebaseConfig.authDomain
+    });
   }
-} catch (error) {
+} catch (error: any) {
   console.error('❌ Firebase 초기화 실패:', error);
+  console.error('에러 상세:', {
+    code: error.code,
+    message: error.message,
+    stack: error.stack
+  });
   throw error;
 }
 

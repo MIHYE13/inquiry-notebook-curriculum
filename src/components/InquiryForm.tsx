@@ -964,7 +964,7 @@ const InquiryForm: React.FC<InquiryFormProps> = ({
                       onClick={(e) => {
                         // URL이 유효한지 최종 확인
                         try {
-                          const url = new URL(normalizedUrl);
+                          new URL(normalizedUrl); // URL 유효성 검사
                           // 유효한 URL이면 정상적으로 열림 (기본 동작)
                           console.log('링크 열기:', normalizedUrl);
                         } catch (error) {

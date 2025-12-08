@@ -95,12 +95,21 @@ export async function getOrCreateStudent(
     }
   } catch (error: any) {
     console.error('학생 정보 가져오기/생성 오류:', error);
+    console.error('에러 상세:', {
+      code: error.code,
+      message: error.message,
+      stack: error.stack
+    });
     
     // 더 구체적인 에러 메시지
     if (error.code === 'unavailable' || error.message?.includes('offline')) {
       throw new Error('인터넷 연결을 확인해주세요. Firebase에 연결할 수 없습니다.');
     } else if (error.code === 'permission-denied') {
-      throw new Error('Firebase 보안 규칙을 확인해주세요.');
+      throw new Error('Firebase 보안 규칙을 확인해주세요. Firestore Database > 규칙에서 접근 권한을 확인하세요.');
+    } else if (error.code === 'invalid-argument' || error.message?.includes('400') || error.message?.includes('Bad Request')) {
+      throw new Error('Firebase 설정이 올바르지 않습니다. Netlify 환경 변수를 확인하세요.');
+    } else if (error.code === 'not-found' || error.message?.includes('404')) {
+      throw new Error('Firebase 프로젝트를 찾을 수 없습니다. 프로젝트 ID를 확인하세요.');
     }
     
     throw error;
@@ -137,9 +146,17 @@ export async function getEntry(
     return null;
   } catch (error: any) {
     console.error('탐구 노트 가져오기 오류:', error);
+    console.error('에러 상세:', {
+      code: error.code,
+      message: error.message
+    });
     
     if (error.code === 'unavailable' || error.message?.includes('offline')) {
       throw new Error('인터넷 연결을 확인해주세요.');
+    } else if (error.code === 'invalid-argument' || error.message?.includes('400') || error.message?.includes('Bad Request')) {
+      throw new Error('Firebase 설정이 올바르지 않습니다. Netlify 환경 변수를 확인하세요.');
+    } else if (error.code === 'permission-denied') {
+      throw new Error('Firebase 보안 규칙을 확인해주세요.');
     }
     
     throw error;

@@ -46,9 +46,23 @@ function App() {
 
       setCurrentStudent(studentData);
       localStorage.setItem('currentStudent', JSON.stringify(studentData));
-    } catch (error) {
+    } catch (error: any) {
       console.error('로그인 실패:', error);
-      setError('접속에 실패했어요. 인터넷 연결을 확인하고 다시 시도해주세요.');
+      
+      // 더 구체적인 에러 메시지
+      let errorMessage = '접속에 실패했어요. 인터넷 연결을 확인하고 다시 시도해주세요.';
+      
+      if (error.message?.includes('Firebase 설정')) {
+        errorMessage = 'Firebase 설정 오류: Netlify 환경 변수를 확인하세요.';
+      } else if (error.message?.includes('보안 규칙')) {
+        errorMessage = 'Firebase 보안 규칙 오류: Firestore Database > 규칙을 확인하세요.';
+      } else if (error.message?.includes('프로젝트')) {
+        errorMessage = 'Firebase 프로젝트를 찾을 수 없습니다. 프로젝트 ID를 확인하세요.';
+      } else if (error.code === 'invalid-argument' || error.message?.includes('400')) {
+        errorMessage = 'Firebase 설정이 올바르지 않습니다. Netlify 환경 변수를 확인하세요.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
