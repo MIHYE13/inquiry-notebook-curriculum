@@ -158,3 +158,4 @@ fetch('https://api.openai.com/v1/chat/completions', {
 
 위의 확인 방법으로 직접 확인해보세요! 🔒
 
+
