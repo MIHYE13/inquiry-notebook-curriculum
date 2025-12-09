@@ -99,14 +99,13 @@ async function callChatGPTAPI(messages: Array<{ role: string; content: string }>
       console.log('✅ Netlify Function 성공:', result);
       return result;
     } catch (error) {
-      console.error('❌ Netlify Function 호출 오류:', {
+      const errorMessage = error instanceof Error ? error.message : 'Netlify Function 호출에 실패했습니다.';
+      
+      console.error(`❌ Netlify Function 호출 오류: ${errorMessage}`, {
         error,
-        message: error instanceof Error ? error.message : String(error),
         url: NETLIFY_FUNCTION_URL,
         hostname: typeof window !== 'undefined' ? window.location.hostname : 'unknown'
       });
-      
-      const errorMessage = error instanceof Error ? error.message : 'Netlify Function 호출에 실패했습니다.';
       
       // 네트워크 오류인 경우 더 자세한 안내
       if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
