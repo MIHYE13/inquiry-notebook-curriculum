@@ -24,14 +24,23 @@ const LOCAL_API_KEY = import.meta.env.VITE_PERPLEXITY_API_KEY || '';
 const LOCAL_API_ENDPOINT = import.meta.env.VITE_PERPLEXITY_API_ENDPOINT || 'https://api.perplexity.ai/chat/completions';
 
 // Netlify Functions를 사용할지 로컬 API를 사용할지 결정
-const USE_NETLIFY_FUNCTIONS = typeof window !== 'undefined' && !window.location.hostname.includes('localhost');
+// 프로덕션 환경 감지: localhost가 아니거나 netlify.app 도메인인 경우
+const isProduction = typeof window !== 'undefined' && (
+  window.location.hostname.includes('netlify.app') ||
+  window.location.hostname.includes('netlify.com') ||
+  (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1'))
+);
+const USE_NETLIFY_FUNCTIONS = typeof window !== 'undefined' && isProduction;
 
-// 환경 변수 로딩 확인 (디버깅용 - 개발 환경에서만)
-if (typeof window !== 'undefined' && import.meta.env.DEV) {
+// 환경 변수 로딩 확인 (디버깅용 - 항상 로그 출력)
+if (typeof window !== 'undefined') {
   console.log('🔍 Perplexity API 설정 확인:', {
+    hostname: window.location.hostname,
+    isProduction,
     useNetlifyFunctions: USE_NETLIFY_FUNCTIONS,
     hasLocalApiKey: !!LOCAL_API_KEY,
-    functionUrl: NETLIFY_FUNCTION_URL
+    functionUrl: NETLIFY_FUNCTION_URL,
+    env: import.meta.env.MODE
   });
 }
 
@@ -56,6 +65,12 @@ export async function searchRecentScienceInfo(
     if (USE_NETLIFY_FUNCTIONS) {
       // Netlify Functions 사용 (프로덕션)
       try {
+        console.log('📡 Netlify Function 호출 (Perplexity):', {
+          url: NETLIFY_FUNCTION_URL,
+          method: 'POST',
+          hostname: window.location.hostname
+        });
+
         const response = await fetch(NETLIFY_FUNCTION_URL, {
           method: 'POST',
           headers: {
@@ -66,17 +81,55 @@ export async function searchRecentScienceInfo(
           }),
         });
 
+        console.log('📡 Netlify Function 응답 (Perplexity):', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok
+        });
+
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(`Netlify Function 오류: ${response.status} - ${errorData.error || '알 수 없는 오류'}`);
+          let errorData: any = {};
+          try {
+            const text = await response.text();
+            errorData = text ? JSON.parse(text) : {};
+          } catch (e) {
+            console.error('응답 파싱 오류:', e);
+          }
+          
+          console.error('❌ Netlify Function 오류 (Perplexity):', {
+            status: response.status,
+            statusText: response.statusText,
+            errorData
+          });
+
+          const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+          throw new Error(`Netlify Function 오류: ${errorMessage}`);
         }
 
-        return await response.json();
+        const result = await response.json();
+        console.log('✅ Netlify Function 성공 (Perplexity):', result);
+        return result;
       } catch (error) {
-        console.error('Netlify Function 호출 오류:', error);
+        console.error('❌ Netlify Function 호출 오류 (Perplexity):', {
+          error,
+          message: error instanceof Error ? error.message : String(error),
+          url: NETLIFY_FUNCTION_URL,
+          hostname: typeof window !== 'undefined' ? window.location.hostname : 'unknown'
+        });
+        
+        const errorMessage = error instanceof Error ? error.message : 'Netlify Function 호출에 실패했습니다.';
+        
+        // 네트워크 오류인 경우 더 자세한 안내
+        if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+          return {
+            success: false,
+            error: '네트워크 연결을 확인해주세요. Netlify Functions가 배포되었는지 확인하세요.'
+          };
+        }
+        
         return {
           success: false,
-          error: error instanceof Error ? error.message : 'Netlify Function 호출에 실패했습니다.'
+          error: errorMessage
         };
       }
     } else {

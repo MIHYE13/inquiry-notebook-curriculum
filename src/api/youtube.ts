@@ -37,14 +37,23 @@ const LOCAL_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || '';
 const LOCAL_API_ENDPOINT = 'https://www.googleapis.com/youtube/v3';
 
 // Netlify Functions를 사용할지 로컬 API를 사용할지 결정
-const USE_NETLIFY_FUNCTIONS = typeof window !== 'undefined' && !window.location.hostname.includes('localhost');
+// 프로덕션 환경 감지: localhost가 아니거나 netlify.app 도메인인 경우
+const isProduction = typeof window !== 'undefined' && (
+  window.location.hostname.includes('netlify.app') ||
+  window.location.hostname.includes('netlify.com') ||
+  (!window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1'))
+);
+const USE_NETLIFY_FUNCTIONS = typeof window !== 'undefined' && isProduction;
 
-// 환경 변수 로딩 확인 (디버깅용)
-if (typeof window !== 'undefined' && import.meta.env.DEV) {
+// 환경 변수 로딩 확인 (디버깅용 - 항상 로그 출력)
+if (typeof window !== 'undefined') {
   console.log('📺 YouTube API 설정 확인:', {
+    hostname: window.location.hostname,
+    isProduction,
     useNetlifyFunctions: USE_NETLIFY_FUNCTIONS,
     hasLocalApiKey: !!LOCAL_API_KEY,
-    functionUrl: NETLIFY_FUNCTION_URL
+    functionUrl: NETLIFY_FUNCTION_URL,
+    env: import.meta.env.MODE
   });
 }
 
@@ -61,19 +70,64 @@ export async function searchScienceVideos(
   if (USE_NETLIFY_FUNCTIONS) {
     // Netlify Functions 사용 (프로덕션)
     try {
-      const response = await fetch(`${NETLIFY_FUNCTION_URL}?q=${encodeURIComponent(query)}&maxResults=${maxResults}`);
+      const url = `${NETLIFY_FUNCTION_URL}?q=${encodeURIComponent(query)}&maxResults=${maxResults}`;
+      console.log('📡 Netlify Function 호출 (YouTube):', {
+        url,
+        method: 'GET',
+        hostname: window.location.hostname
+      });
+
+      const response = await fetch(url);
+
+      console.log('📡 Netlify Function 응답 (YouTube):', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok
+      });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(`Netlify Function 오류: ${response.status} - ${errorData.error || '알 수 없는 오류'}`);
+        let errorData: any = {};
+        try {
+          const text = await response.text();
+          errorData = text ? JSON.parse(text) : {};
+        } catch (e) {
+          console.error('응답 파싱 오류:', e);
+        }
+        
+        console.error('❌ Netlify Function 오류 (YouTube):', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
+
+        const errorMessage = errorData.error || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(`Netlify Function 오류: ${errorMessage}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log('✅ Netlify Function 성공 (YouTube):', result);
+      return result;
     } catch (error) {
-      console.error('Netlify Function 호출 오류:', error);
+      console.error('❌ Netlify Function 호출 오류 (YouTube):', {
+        error,
+        message: error instanceof Error ? error.message : String(error),
+        url: NETLIFY_FUNCTION_URL,
+        hostname: typeof window !== 'undefined' ? window.location.hostname : 'unknown'
+      });
+      
+      const errorMessage = error instanceof Error ? error.message : 'Netlify Function 호출에 실패했습니다.';
+      
+      // 네트워크 오류인 경우 더 자세한 안내
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        return {
+          success: false,
+          error: '네트워크 연결을 확인해주세요. Netlify Functions가 배포되었는지 확인하세요.'
+        };
+      }
+      
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Netlify Function 호출에 실패했습니다.'
+        error: errorMessage
       };
     }
   } else {
