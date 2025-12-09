@@ -344,6 +344,26 @@ export const handler: Handler = async (event, context) => {
 npm install --save-dev @netlify/functions @types/node
 ```
 
+### 5-1단계: ES 모듈 설정 확인 (중요!)
+
+Netlify Functions가 ES 모듈(`import`/`export`)을 사용하려면 `package.json`에 다음 설정이 필요합니다:
+
+**`package.json`**:
+```json
+{
+  "name": "your-project",
+  "type": "module",  // ⭐ 이 설정이 필수입니다!
+  ...
+}
+```
+
+**설명:**
+- `"type": "module"`을 설정하면 모든 `.js` 파일이 ES 모듈로 처리됩니다.
+- Netlify Functions에서 `import`/`export` 문을 사용할 수 있습니다.
+- 이 설정이 없으면 `require`를 사용해야 하거나 `.mjs` 확장자를 사용해야 합니다.
+
+**현재 프로젝트는 이미 이 설정이 되어 있습니다!** ✅
+
 ### 6단계: TypeScript 설정 업데이트
 
 `tsconfig.json`에 추가:

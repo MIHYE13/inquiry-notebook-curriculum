@@ -202,6 +202,22 @@ service cloud.firestore {
 - **환경 변수를 추가한 후에는 반드시 재배포해야 합니다.**
 - **프로덕션 환경에서는 Firebase 보안 규칙을 더 엄격하게 설정하는 것이 좋습니다.**
 
+### HTML 스크립트 태그 주의사항
+
+`import` 문을 사용하는 JavaScript 파일을 HTML에서 로드할 때는 반드시 `type="module"`을 지정해야 합니다:
+
+```html
+<!-- ❌ 오류 발생: import 문이 있는 경우 -->
+<script src="my-script.js"></script>
+
+<!-- ✅ 올바른 방법: type="module" 지정 -->
+<script type="module" src="my-module.js"></script>
+```
+
+**현재 프로젝트는 이미 올바르게 설정되어 있습니다:**
+- `index.html`: `<script type="module" src="/src/main.tsx"></script>`
+- Vite가 자동으로 빌드된 파일에도 `type="module"`을 추가합니다.
+
 ---
 
 ## 📚 관련 문서
